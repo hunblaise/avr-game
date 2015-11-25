@@ -556,21 +556,21 @@ static void display_playfield()
     {
         if (LEFT_ROW[i] == PLAYER_SPOT)
         {
-            lcd_send_command(DD_RAM_ADDR2);
+            lcd_send_command(DD_RAM_ADDR2 + i);
             lcd_send_data(PLAYER);
         } else if (LEFT_ROW[i] == BOX_SPOT)
         {
-            lcd_send_command(DD_RAM_ADDR2);
+            lcd_send_command(DD_RAM_ADDR2 + i);
             lcd_send_data(UP);
         }
 
         if (RIGHT_ROW[i] == PLAYER_SPOT)
         {
-            lcd_send_command(DD_RAM_ADDR);
+            lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(PLAYER);
         } else if (RIGHT_ROW[i] == BOX_SPOT) 
         {
-            lcd_send_command(DD_RAM_ADDR);
+            lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(DOWN);
         }
     }
