@@ -1,9 +1,3 @@
-/**
-* MiniTris -- Mini Tetris game developed for Embedded Systems course
-* by Akos Kiss
-*/
-
-
 #include "avr/io.h"
 #include "lcd.h"
 
@@ -510,6 +504,40 @@ static void pattern_init()
     }
 }
 
+// BARRIER
+
+#define EMPTY_SPOT 0
+#define BOX_SPOT 1
+#define PLAYER_SPOT 2
+
+static int LEFT_ROW[26] = { EMPTY_SPOT };
+static int RIGHT_ROW[26] = { EMPTY_SPOT };
+
+static void generate_barrier() {
+    rnd_init();
+    if (rnd_gen(10) > 6)
+    {
+        rnd_gen(1) > 0 ? LEFT_ROW[25] = BOX_SPOT : RIGHT_ROW[25] = BOX_SPOT;
+    }
+}
+
+static void iterate_barriers()
+{
+    for (int i = 25; i > 0; --i)
+    {
+        if (LEFT_ROW[i] == BOX_SPOT)
+        {
+            LEFT_ROW[i] = EMPTY_SPOT;
+            LEFT_ROW[i - 1] = BOX_SPOT;
+        }
+
+        if (RIGHT_ROW[i] == BOX_SPOT)
+        {
+            RIGHT_ROW[i] = EMPTY_SPOT;
+            RIGHT_ROW[i - 1] = BOX_SPOT;
+        }
+    }
+}
 
 #define UP 0
 #define UP_FIRST_HALF 1
@@ -520,6 +548,34 @@ static void pattern_init()
 #define PLAYER 6
 #define EMPTY 7
 
+// BARRIER MOVEMENT
+
+static void display_playfield()
+{
+    for (int i = 0; i < 26; ++i)
+    {
+        if (LEFT_ROW[i] == PLAYER_SPOT)
+        {
+            lcd_send_command(DD_RAM_ADDR2);
+            lcd_send_data(PLAYER);
+        } else if (LEFT_ROW[i] == BOX_SPOT)
+        {
+            lcd_send_command(DD_RAM_ADDR2);
+            lcd_send_data(UP);
+        }
+
+        if (RIGHT_ROW[i] == PLAYER_SPOT)
+        {
+            lcd_send_command(DD_RAM_ADDR);
+            lcd_send_data(PLAYER);
+        } else if (RIGHT_ROW[i] == BOX_SPOT) 
+        {
+            lcd_send_command(DD_RAM_ADDR);
+            lcd_send_data(DOWN);
+        }
+    }
+}
+
 // PLAYER MOVEMENT
 
 static void step_left()
@@ -528,6 +584,9 @@ static void step_left()
     lcd_send_data(PLAYER);
     lcd_send_command(DD_RAM_ADDR+2);
     lcd_send_data(EMPTY);
+
+    LEFT_ROW[6] = PLAYER_SPOT;
+    RIGHT_ROW[6] = EMPTY_SPOT;
 }
 
 static void step_right()
@@ -536,23 +595,21 @@ static void step_right()
     lcd_send_data(PLAYER);
     lcd_send_command(DD_RAM_ADDR2+2);
     lcd_send_data(EMPTY);
+
+    RIGHT_ROW[6] = PLAYER_SPOT;
+    LEFT_ROW[6] = EMPTY_SPOT;
 }
-
-// BARRIER
-
-typedef int bool;
-#define true 1
-#define false 0
-
-static bool UP_ROW[26];
-static bool DOWN_ROW[26];
 
 int main() {
     port_init();
     lcd_init();
     pattern_init();
+    rnd_init();
 
     while(1) {
+        iterate_barriers();
+        display_playfield();
+        
         int button = button_pressed();
         int horizontal = 0;
 
@@ -567,5 +624,6 @@ int main() {
         }
 
         button_unlock();
+        generate_barrier();
     }
 }
