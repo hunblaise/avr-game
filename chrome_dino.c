@@ -44,9 +44,9 @@ static void play_note(int freq, int len) {
     for (int l = 0; l < len; ++l) {
         int i;
         PORTE = (PORTE & 0b11011111) | 0b00010000; //set bit4 = 1; set bit5 = 0
-        for (i=freq; i; i--);
+        for (i = freq; i; i--);
         PORTE = (PORTE | 0b00100000) & 0b11101111; //set bit4 = 0; set bit5 = 1
-        for (i=freq; i; i--);
+        for (i = freq; i; i--);
     }
 }
 
@@ -67,25 +67,25 @@ static void play_tune(tune_t *tune) {
 static int button_accept = 1;
 
 static int button_pressed() {
-    // right
+// right
     if (!(PINA & 0b00000001) & button_accept) { // check state of button 1 and value of button_accept
         button_accept = 0; // button is pressed
         return BUTTON_RIGHT;
     }
 
-    // up
+// up
     if (!(PINA & 0b00000010) & button_accept) { // check state of button 2 and value of button_accept
         button_accept = 0; // button is pressed
         return BUTTON_UP;
     }
 
-    // center
+// center
     if (!(PINA & 0b00000100) & button_accept) { // check state of button 2 and value of button_accept
         button_accept = 0; // button is pressed
         return BUTTON_CENTER;
     }
 
-    // left
+// left
     if (!(PINA & 0b00010000) & button_accept) { // check state of button 5 and value of button_accept
         button_accept = 0; // button is pressed
         return BUTTON_LEFT;
@@ -95,21 +95,21 @@ static int button_pressed() {
 }
 
 static void button_unlock() {
-    //check state of all buttons
+//check state of all buttons
     if (
-    ((PINA & 0b00000001)
-    |(PINA & 0b00000010)
-    |(PINA & 0b00000100)
-    |(PINA & 0b00001000)
-    |(PINA & 0b00010000)) == 31)
-    button_accept = 1; //if all buttons are released button_accept gets value 1
+        ((PINA & 0b00000001)
+         | (PINA & 0b00000010)
+         | (PINA & 0b00000100)
+         | (PINA & 0b00001000)
+         | (PINA & 0b00010000)) == 31)
+        button_accept = 1; //if all buttons are released button_accept gets value 1
 }
 
 // LCD HELPERS ---------------------------------------------------------------
 
 static void lcd_delay(unsigned int a) {
     while (a)
-    a--;
+        a--;
 }
 
 static void lcd_pulse() {
@@ -124,17 +124,17 @@ static void lcd_send(int command, unsigned char a) {
     data = 0b00001111 | a; //get high 4 bits
     PORTC = (PORTC | 0b11110000) & data; //set D4-D7
     if (command)
-    PORTC = PORTC & 0b11111110; //set RS port to 0 -> display set to command mode
+        PORTC = PORTC & 0b11111110; //set RS port to 0 -> display set to command mode
     else
-    PORTC = PORTC | 0b00000001; //set RS port to 1 -> display set to data mode
+        PORTC = PORTC | 0b00000001; //set RS port to 1 -> display set to data mode
     lcd_pulse(); //pulse to set D4-D7 bits
 
-    data = a<<4; //get low 4 bits
+    data = a << 4; //get low 4 bits
     PORTC = (PORTC & 0b00001111) | data; //set D4-D7
     if (command)
-    PORTC = PORTC & 0b11111110; //set RS port to 0 -> display set to command mode
+        PORTC = PORTC & 0b11111110; //set RS port to 0 -> display set to command mode
     else
-    PORTC = PORTC | 0b00000001; //set RS port to 1 -> display set to data mode
+        PORTC = PORTC | 0b00000001; //set RS port to 1 -> display set to data mode
     lcd_pulse(); //pulse to set d4-d7 bits
 }
 
@@ -147,8 +147,8 @@ static void lcd_send_data(unsigned char a) {
 }
 
 static void lcd_init() {
-    //LCD initialization
-    //step by step (from Gosho) - from DATASHEET
+//LCD initialization
+//step by step (from Gosho) - from DATASHEET
 
     PORTC = PORTC & 0b11111110;
 
@@ -175,7 +175,7 @@ static void lcd_init() {
 
 static void lcd_send_text(char *str) {
     while (*str)
-    lcd_send_data(*str++);
+        lcd_send_data(*str++);
 }
 
 static void lcd_send_line1(char *str) {
@@ -201,11 +201,11 @@ static int level_current = 0;
 static int delay_cycle;
 
 static void row_removed() {
-    // do nothing if already at top speed
-    if (level_current == LEVEL_NUM-1)
-    return;
+// do nothing if already at top speed
+    if (level_current == LEVEL_NUM - 1)
+        return;
 
-    // if enough rows removed, increase speed
+// if enough rows removed, increase speed
     if (--LEVELS[level_current].rows == 0) {
         ++level_current;
         play_tune(TUNE_LEVELUP);
@@ -231,19 +231,19 @@ static unsigned char playfield[PLAYFIELD_ROWS + 1];
 
 static void playfield_clear() {
     for (int r = 0; r < PLAYFIELD_ROWS; ++r)
-    playfield[r] = 0b100001;
+        playfield[r] = 0b100001;
     playfield[PLAYFIELD_ROWS] = 0b111111;
 }
 
 static void merge_current_pattern_to_playfield() {
-    // merge current piece to playfield
+// merge current piece to playfield
     for (int p = 0; p < PATTERN_SIZE; ++p)
-    playfield[current_row + p] |= current_pattern[p] << (current_col + 1);
-    // remove full lines and drop lines above
+        playfield[current_row + p] |= current_pattern[p] << (current_col + 1);
+// remove full lines and drop lines above
     for (int r = 0; r < PLAYFIELD_ROWS; ++r) {
         if (playfield[r] == 0b111111) {
             for (int rr = r; rr > 0; --rr)
-            playfield[rr] = playfield[rr - 1];
+                playfield[rr] = playfield[rr - 1];
             playfield[0] = 0b100001;
             row_removed(); // let's see whether we should increase the speed
         }
@@ -253,20 +253,20 @@ static void merge_current_pattern_to_playfield() {
 static int collision(char *pattern, int row, int col) {
     int result = 0;
     for (int r = 0; r < PATTERN_SIZE; ++r)
-    result |= playfield[row + r] & (pattern[r] << (col + 1));
+        result |= playfield[row + r] & (pattern[r] << (col + 1));
     return !!result;
 }
 
 static void rotate_pattern(char *src_pattern, char *dst_pattern) {
-    // rotate the piece
+// rotate the piece
     dst_pattern[0] = (src_pattern[0] >> 1) | ((src_pattern[1] >> 1) << 1);
     dst_pattern[1] = (src_pattern[0] & 0x01) | ((src_pattern[1] & 0x01) << 1);
-    // if the topmost row of the rotated piece is empty, shift the pattern upwards
+// if the topmost row of the rotated piece is empty, shift the pattern upwards
     if (dst_pattern[0] == 0) {
         dst_pattern[0] = dst_pattern[1];
         dst_pattern[1] = 0;
     }
-    // if the rightmost column of the rotated piece is empty, shift the pattern to the right
+// if the rightmost column of the rotated piece is empty, shift the pattern to the right
     if (((dst_pattern[0] & 0b01) == 0) && ((dst_pattern[1] & 0b01) == 0)) {
         dst_pattern[0] >>= 1;
         dst_pattern[1] >>= 1;
@@ -323,9 +323,9 @@ static const char XLAT_CHAR[] = {
 
 static void chars_init() {
     for (int c = 0; c < CHARMAP_SIZE; ++c) {
-        lcd_send_command(CG_RAM_ADDR + c*8);
+        lcd_send_command(CG_RAM_ADDR + c * 8);
         for (int r = 0; r < 8; ++r)
-        lcd_send_data(CHARMAP[c][r]);
+            lcd_send_data(CHARMAP[c][r]);
     }
 }
 
@@ -335,8 +335,8 @@ static void screen_update() {
     for (int r1 = 0; r1 < PLAYFIELD_ROWS; ++r1) {
         unsigned char row = XLAT_PLAYGROUND[(playfield[r1] >> 1) & 0b11];
         for (int pr = 0; pr < PATTERN_SIZE; ++pr)
-        if (r1 == current_row + pr)
-        row |= XLAT_PATTERN[(current_pattern[pr] << current_col) & 0b11];
+            if (r1 == current_row + pr)
+                row |= XLAT_PATTERN[(current_pattern[pr] << current_col) & 0b11];
         lcd_send_data(XLAT_CHAR[row]);
     }
 
@@ -345,8 +345,8 @@ static void screen_update() {
     for (int r2 = 0; r2 < PLAYFIELD_ROWS; ++r2) {
         char row = XLAT_PLAYGROUND[(playfield[r2] >> 3) & 0b11];
         for (int pr = 0; pr < PATTERN_SIZE; ++pr)
-        if (r2 == current_row + pr)
-        row |= XLAT_PATTERN[((current_pattern[pr] << current_col) >> 2) & 0b11];
+            if (r2 == current_row + pr)
+                row |= XLAT_PATTERN[((current_pattern[pr] << current_col) >> 2) & 0b11];
         lcd_send_data(XLAT_CHAR[row]);
     }
 }
@@ -356,7 +356,7 @@ static void screen_update() {
 // PATTERNS
 
 static const unsigned char BOX_UP_FULL[8] =
-  { 0b11111,
+{   0b11111,
     0b11111,
 
     0b11111,
@@ -366,10 +366,11 @@ static const unsigned char BOX_UP_FULL[8] =
     0b11111,
 
     0b00000,
-    0b00000 };
+    0b00000
+};
 
 static const unsigned char BOX_UP_FIRST_HALF[8] =
-  { 0b11100,
+{   0b11100,
     0b11100,
 
     0b11100,
@@ -379,10 +380,11 @@ static const unsigned char BOX_UP_FIRST_HALF[8] =
     0b11100,
 
     0b00000,
-    0b00000 };
+    0b00000
+};
 
 static const unsigned char BOX_UP_SECOND_HALF[8] =
-  { 0b00111,
+{   0b00111,
     0b00111,
 
     0b00111,
@@ -392,11 +394,12 @@ static const unsigned char BOX_UP_SECOND_HALF[8] =
     0b00111,
 
     0b00000,
-    0b00000 };
+    0b00000
+};
 
 
 static const unsigned char BOX_DOWN_FULL[8] =
-  { 0b00000,
+{   0b00000,
     0b00000,
 
     0b11111,
@@ -406,10 +409,11 @@ static const unsigned char BOX_DOWN_FULL[8] =
     0b11111,
 
     0b11111,
-    0b11111 };
+    0b11111
+};
 
 static const unsigned char BOX_DOWN_FIRST_HALF[8] =
-  { 0b00000,
+{   0b00000,
     0b00000,
 
     0b11100,
@@ -419,10 +423,11 @@ static const unsigned char BOX_DOWN_FIRST_HALF[8] =
     0b11100,
 
     0b11100,
-    0b11100 };
+    0b11100
+};
 
 static const unsigned char BOX_DOWN_SECOND_HALF[8] =
-  { 0b00000,
+{   0b00000,
     0b00000,
 
     0b11100,
@@ -432,10 +437,11 @@ static const unsigned char BOX_DOWN_SECOND_HALF[8] =
     0b00111,
 
     0b00111,
-    0b00111 };
+    0b00111
+};
 
 static const unsigned char PLAYER_PATTERN[8] =
-  { 0b00000,
+{   0b00000,
     0b00000,
 
     0b01110,
@@ -445,10 +451,11 @@ static const unsigned char PLAYER_PATTERN[8] =
     0b01110,
 
     0b00000,
-    0b00000 };
+    0b00000
+};
 
 static const unsigned char EMPTY_PATTERN[8] =
-  { 0b00000,
+{   0b00000,
     0b00000,
 
     0b00000,
@@ -458,14 +465,15 @@ static const unsigned char EMPTY_PATTERN[8] =
     0b00000,
 
     0b00000,
-    0b00000 };
+    0b00000
+};
 
 static void pattern_init()
 {
     lcd_send_command(CG_RAM_ADDR);
     for (int i = 0; i < 8; ++i)
     {
-        lcd_send_data(BOX_UP[i]);
+        lcd_send_data(BOX_UP_FULL[i]);
     }
 
     for (int i = 0; i < 8; ++i)
@@ -480,7 +488,7 @@ static void pattern_init()
 
     for (int i = 0; i < 8; ++i)
     {
-        lcd_send_data(BOX_DOWN[i]);
+        lcd_send_data(BOX_DOWN_FULL[i]);
     }
 
     for (int i = 0; i < 8; ++i)
@@ -510,32 +518,48 @@ static void pattern_init()
 #define BOX_SPOT 1
 #define PLAYER_SPOT 2
 
-static int LEFT_ROW[26] = { EMPTY_SPOT };
-static int RIGHT_ROW[26] = { EMPTY_SPOT };
+static int LEFT_ROW[16] = { EMPTY_SPOT };
+static int RIGHT_ROW[16] = { EMPTY_SPOT };
 
 static void generate_barrier() {
-    rnd_init();
-    if (rnd_gen(10) > 6)
+    int rnd = rnd_gen(10);
+
+    if (rnd > 2)
     {
-        rnd_gen(1) > 0 ? LEFT_ROW[25] = BOX_SPOT : RIGHT_ROW[25] = BOX_SPOT;
+        if (rnd > 5 && RIGHT_ROW[14] != BOX_SPOT)
+        {
+            LEFT_ROW[15] = BOX_SPOT;
+        } else if (LEFT_ROW[14] != BOX_SPOT)
+        {
+            RIGHT_ROW[15] = BOX_SPOT;
+        }
     }
 }
 
 static void iterate_barriers()
 {
-    for (int i = 25; i > 0; --i)
+    for (int i = 0; i < 15; ++i)
     {
-        if (LEFT_ROW[i] == BOX_SPOT)
+        if (LEFT_ROW[i + 1] == BOX_SPOT && LEFT_ROW[i] != PLAYER_SPOT)
         {
-            LEFT_ROW[i] = EMPTY_SPOT;
-            LEFT_ROW[i - 1] = BOX_SPOT;
+            LEFT_ROW[i] = BOX_SPOT;
+            LEFT_ROW[i + 1] = EMPTY_SPOT;
         }
 
-        if (RIGHT_ROW[i] == BOX_SPOT)
+        if (RIGHT_ROW[i + 1] == BOX_SPOT && RIGHT_ROW[i] != PLAYER_SPOT)
         {
-            RIGHT_ROW[i] = EMPTY_SPOT;
-            RIGHT_ROW[i - 1] = BOX_SPOT;
+            RIGHT_ROW[i] = BOX_SPOT;
+            RIGHT_ROW[i + 1] = EMPTY_SPOT;
         }
+    }
+
+    if (LEFT_ROW[0] == BOX_SPOT)
+    {
+        LEFT_ROW[0] = EMPTY_SPOT;
+    }
+    if (RIGHT_ROW[0] == BOX_SPOT)
+    {
+        RIGHT_ROW[0] = EMPTY_SPOT;
     }
 }
 
@@ -552,7 +576,7 @@ static void iterate_barriers()
 
 static void display_playfield()
 {
-    for (int i = 0; i < 26; ++i)
+    for (int i = 0; i < 16; ++i)
     {
         if (LEFT_ROW[i] == PLAYER_SPOT)
         {
@@ -562,16 +586,32 @@ static void display_playfield()
         {
             lcd_send_command(DD_RAM_ADDR2 + i);
             lcd_send_data(UP);
+        } else if (LEFT_ROW[i] == EMPTY_SPOT)
+        {
+            lcd_send_command(DD_RAM_ADDR2 + i);
+            lcd_send_data(EMPTY);
+        } else
+        {
+            lcd_send_command(DD_RAM_ADDR2 + i);
+            lcd_send_data(EMPTY);
         }
 
         if (RIGHT_ROW[i] == PLAYER_SPOT)
         {
             lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(PLAYER);
-        } else if (RIGHT_ROW[i] == BOX_SPOT) 
+        } else if (RIGHT_ROW[i] == BOX_SPOT)
         {
             lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(DOWN);
+        } else if (RIGHT_ROW[i] == EMPTY_SPOT)
+        {
+            lcd_send_command(DD_RAM_ADDR + i);
+            lcd_send_data(EMPTY);
+        } else
+        {
+            lcd_send_command(DD_RAM_ADDR + i);
+            lcd_send_data(EMPTY);
         }
     }
 }
@@ -580,50 +620,54 @@ static void display_playfield()
 
 static void step_left()
 {
-    lcd_send_command(DD_RAM_ADDR2+2);
-    lcd_send_data(PLAYER);
-    lcd_send_command(DD_RAM_ADDR+2);
-    lcd_send_data(EMPTY);
-
-    LEFT_ROW[6] = PLAYER_SPOT;
-    RIGHT_ROW[6] = EMPTY_SPOT;
+    LEFT_ROW[2] = PLAYER_SPOT;
+    RIGHT_ROW[2] = EMPTY_SPOT;
 }
 
 static void step_right()
 {
-    lcd_send_command(DD_RAM_ADDR+2);
-    lcd_send_data(PLAYER);
-    lcd_send_command(DD_RAM_ADDR2+2);
-    lcd_send_data(EMPTY);
+    RIGHT_ROW[2] = PLAYER_SPOT;
+    LEFT_ROW[2] = EMPTY_SPOT;
+}
 
-    RIGHT_ROW[6] = PLAYER_SPOT;
-    LEFT_ROW[6] = EMPTY_SPOT;
+static void player_init()
+{
+    LEFT_ROW[2] = PLAYER_SPOT;
 }
 
 int main() {
     port_init();
     lcd_init();
     pattern_init();
+    player_init();
     rnd_init();
 
-    while(1) {
-        iterate_barriers();
+    while (1) {
+        generate_barrier();
         display_playfield();
-        
-        int button = button_pressed();
-        int horizontal = 0;
 
+        int button = button_pressed();
         if (button == BUTTON_LEFT)
         {
             step_left();
         }
-
         if (button == BUTTON_RIGHT)
         {
             step_right();
         }
+        if (button == BUTTON_UP)
+        {
+            iterate_barriers();
+            generate_barrier();
 
+        }
+        if (button == BUTTON_CENTER)
+        {
+            display_playfield();
+        }
         button_unlock();
-        generate_barrier();
+
+        lcd_delay(1300000);
+        iterate_barriers();
     }
 }
