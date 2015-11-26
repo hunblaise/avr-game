@@ -518,8 +518,12 @@ static void pattern_init()
 #define BOX_SPOT 1
 #define PLAYER_SPOT 2
 
+#define PLAYER_POSITION 2
+
 static int LEFT_ROW[16] = { EMPTY_SPOT };
 static int RIGHT_ROW[16] = { EMPTY_SPOT };
+
+static int is_game_over = 0;
 
 static void generate_barrier() {
     int rnd = rnd_gen(10);
@@ -540,13 +544,21 @@ static void iterate_barriers()
 {
     for (int i = 0; i < 15; ++i)
     {
-        if (LEFT_ROW[i + 1] == BOX_SPOT && LEFT_ROW[i] != PLAYER_SPOT)
+        if (LEFT_ROW[i + 1] == BOX_SPOT && LEFT_ROW[i] == PLAYER_SPOT)
+        {
+            is_game_over = 1;
+
+        } else if (LEFT_ROW[i + 1] == BOX_SPOT)
         {
             LEFT_ROW[i] = BOX_SPOT;
             LEFT_ROW[i + 1] = EMPTY_SPOT;
         }
 
-        if (RIGHT_ROW[i + 1] == BOX_SPOT && RIGHT_ROW[i] != PLAYER_SPOT)
+        if (RIGHT_ROW[i + 1] == BOX_SPOT && RIGHT_ROW[i] == PLAYER_SPOT)
+        {
+            is_game_over = 1;
+
+        } else if (RIGHT_ROW[i + 1] == BOX_SPOT)
         {
             RIGHT_ROW[i] = BOX_SPOT;
             RIGHT_ROW[i + 1] = EMPTY_SPOT;
@@ -620,19 +632,28 @@ static void display_playfield()
 
 static void step_left()
 {
-    LEFT_ROW[2] = PLAYER_SPOT;
-    RIGHT_ROW[2] = EMPTY_SPOT;
+    LEFT_ROW[PLAYER_POSITION] = PLAYER_SPOT;
+    RIGHT_ROW[PLAYER_POSITION] = EMPTY_SPOT;
 }
 
 static void step_right()
 {
-    RIGHT_ROW[2] = PLAYER_SPOT;
-    LEFT_ROW[2] = EMPTY_SPOT;
+    RIGHT_ROW[PLAYER_POSITION] = PLAYER_SPOT;
+    LEFT_ROW[PLAYER_POSITION] = EMPTY_SPOT;
 }
 
 static void player_init()
 {
-    LEFT_ROW[2] = PLAYER_SPOT;
+    LEFT_ROW[PLAYER_POSITION] = PLAYER_SPOT;
+}
+
+static void playfield_init()
+{
+    for (int i = 0; i < 16; ++i)
+    {
+        LEFT_ROW[i] = EMPTY_SPOT;
+        RIGHT_ROW[i] = EMPTY_SPOT;
+    }
 }
 
 int main() {
@@ -642,32 +663,38 @@ int main() {
     player_init();
     rnd_init();
 
-    while (1) {
-        generate_barrier();
-        display_playfield();
+    while (1)
+    {
+        while (!is_game_over)
+        {
+            generate_barrier();
+            display_playfield();
+
+            int button = button_pressed();
+            if (button == BUTTON_LEFT)
+            {
+                step_left();
+            }
+            if (button == BUTTON_RIGHT)
+            {
+                step_right();
+            }
+
+            button_unlock();
+
+            lcd_delay(1300000);
+            iterate_barriers();
+        }
+        /*play_tune(TUNE_GAMEOVER);*/
 
         int button = button_pressed();
-        if (button == BUTTON_LEFT)
-        {
-            step_left();
-        }
-        if (button == BUTTON_RIGHT)
-        {
-            step_right();
-        }
-        if (button == BUTTON_UP)
-        {
-            iterate_barriers();
-            generate_barrier();
-
-        }
         if (button == BUTTON_CENTER)
         {
-            display_playfield();
+            is_game_over = 0;
+            playfield_init();
+            player_init();
         }
         button_unlock();
-
-        lcd_delay(1300000);
-        iterate_barriers();
     }
+
 }
