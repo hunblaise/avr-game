@@ -471,6 +471,16 @@ static const unsigned char EMPTY_PATTERN[8] =
 static void pattern_init()
 {
     lcd_send_command(CG_RAM_ADDR);
+
+    for (int i = 0; i < 8; ++i)
+    {
+        lcd_send_data(PLAYER_PATTERN[i]);
+    }
+
+    for (int i = 0; i < 8; ++i)
+    {
+        lcd_send_data(EMPTY_PATTERN[i]);
+    }
     for (int i = 0; i < 8; ++i)
     {
         lcd_send_data(BOX_UP_FULL[i]);
@@ -500,26 +510,15 @@ static void pattern_init()
     {
         lcd_send_data(BOX_DOWN_SECOND_HALF[i]);
     }
-
-    for (int i = 0; i < 8; ++i)
-    {
-        lcd_send_data(PLAYER_PATTERN[i]);
-    }
-
-    for (int i = 0; i < 8; ++i)
-    {
-        lcd_send_data(EMPTY_PATTERN[i]);
-    }
 }
 
 // BARRIER
 
 #define EMPTY_SPOT 0
-#define BOX_SPOT 1
-#define FULL_BOX_SPOT 1
-#define LAST_BOX_HALF_SPOT 2
-#define FIRST_BOX_HALF_SPOT 3
-#define PLAYER_SPOT 2
+#define PLAYER_SPOT 1
+#define FULL_BOX_SPOT 2
+#define LAST_BOX_HALF_SPOT 3
+#define FIRST_BOX_HALF_SPOT 4
 
 #define PLAYER_POSITION 2
 
@@ -533,12 +532,12 @@ static void generate_barrier() {
 
     if (rnd > 2)
     {
-        if (rnd > 5 && RIGHT_ROW[14] != BOX_SPOT)
+        if (rnd > 5 && RIGHT_ROW[14] != FULL_BOX_SPOT)
         {
-            LEFT_ROW[15] = BOX_SPOT;
-        } else if (LEFT_ROW[14] != BOX_SPOT)
+            LEFT_ROW[15] = FULL_BOX_SPOT;
+        } else if (LEFT_ROW[14] != FULL_BOX_SPOT)
         {
-            RIGHT_ROW[15] = BOX_SPOT;
+            RIGHT_ROW[15] = FULL_BOX_SPOT;
         }
     }
 }
@@ -547,45 +546,59 @@ static void iterate_barriers()
 {
     for (int i = 0; i < 15; ++i)
     {
-        if (LEFT_ROW[i + 1] == BOX_SPOT && LEFT_ROW[i] == PLAYER_SPOT)
+        if (LEFT_ROW[i + 1] == FULL_BOX_SPOT && LEFT_ROW[i] == PLAYER_SPOT)
         {
             is_game_over = 1;
-
-        } else if (LEFT_ROW[i + 1] == BOX_SPOT)
+        } else if (LEFT_ROW[i + 1] == FULL_BOX_SPOT)
         {
-            LEFT_ROW[i] = BOX_SPOT;
+            LEFT_ROW[i] = FULL_BOX_SPOT;
             LEFT_ROW[i + 1] = EMPTY_SPOT;
+        } else if (LEFT_ROW[i + 1] == FULL_BOX_SPOT)
+        {
+            LEFT_ROW[i] = FIRST_BOX_HALF_SPOT;
+            LEFT_ROW[i + 1] = LAST_BOX_HALF_SPOT;
+        } else if (LEFT_ROW[i + 1] == LAST_BOX_HALF_SPOT)
+        {
+            LEFT_ROW[i + 1] = EMPTY_SPOT;
+            LEFT_ROW[i] = FULL_BOX_SPOT;
         }
 
-        if (RIGHT_ROW[i + 1] == BOX_SPOT && RIGHT_ROW[i] == PLAYER_SPOT)
+        if (RIGHT_ROW[i + 1] == FULL_BOX_SPOT && RIGHT_ROW[i] == PLAYER_SPOT)
         {
             is_game_over = 1;
-
-        } else if (RIGHT_ROW[i + 1] == BOX_SPOT)
+        } else if (RIGHT_ROW[i + 1] == FULL_BOX_SPOT)
         {
-            RIGHT_ROW[i] = BOX_SPOT;
+            RIGHT_ROW[i] = FULL_BOX_SPOT;
             RIGHT_ROW[i + 1] = EMPTY_SPOT;
+        } else if (RIGHT_ROW[i + 1] == FULL_BOX_SPOT)
+        {
+            RIGHT_ROW[i] = FIRST_BOX_HALF_SPOT;
+            RIGHT_ROW[i + 1] = LAST_BOX_HALF_SPOT;
+        } else if (RIGHT_ROW[i + 1] == LAST_BOX_HALF_SPOT)
+        {
+            RIGHT_ROW[i + 1] = EMPTY_SPOT;
+            RIGHT_ROW[i] = FULL_BOX_SPOT;
         }
     }
 
-    if (LEFT_ROW[0] == BOX_SPOT)
+    if (LEFT_ROW[0] == FULL_BOX_SPOT)
     {
         LEFT_ROW[0] = EMPTY_SPOT;
     }
-    if (RIGHT_ROW[0] == BOX_SPOT)
+    if (RIGHT_ROW[0] == FULL_BOX_SPOT)
     {
         RIGHT_ROW[0] = EMPTY_SPOT;
     }
 }
 
-#define UP 0
-#define UP_FIRST_HALF 1
-#define UP_SECOND_HALF 2
-#define DOWN 3
-#define DOWN_FIRST_HALF 4
-#define DOWN_SECOND_HALF 5
-#define PLAYER 6
-#define EMPTY 7
+#define PLAYER 0
+#define EMPTY 1
+#define UP 2
+#define UP_FIRST_HALF 3
+#define UP_SECOND_HALF 4
+#define DOWN 5
+#define DOWN_FIRST_HALF 6
+#define DOWN_SECOND_HALF 7
 
 // BARRIER MOVEMENT
 
@@ -597,7 +610,7 @@ static void display_playfield()
         {
             lcd_send_command(DD_RAM_ADDR2 + i);
             lcd_send_data(PLAYER);
-        } else if (LEFT_ROW[i] == BOX_SPOT)
+        } else if (LEFT_ROW[i] == FULL_BOX_SPOT)
         {
             lcd_send_command(DD_RAM_ADDR2 + i);
             lcd_send_data(UP);
@@ -615,7 +628,7 @@ static void display_playfield()
         {
             lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(PLAYER);
-        } else if (RIGHT_ROW[i] == BOX_SPOT)
+        } else if (RIGHT_ROW[i] == FULL_BOX_SPOT)
         {
             lcd_send_command(DD_RAM_ADDR + i);
             lcd_send_data(DOWN);
