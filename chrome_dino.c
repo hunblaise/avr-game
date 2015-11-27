@@ -516,6 +516,9 @@ static void pattern_init()
 
 #define EMPTY_SPOT 0
 #define BOX_SPOT 1
+#define FULL_BOX_SPOT 1
+#define LAST_BOX_HALF_SPOT 2
+#define FIRST_BOX_HALF_SPOT 3
 #define PLAYER_SPOT 2
 
 #define PLAYER_POSITION 2
